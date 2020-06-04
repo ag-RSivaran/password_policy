@@ -87,6 +87,20 @@ class PasswordHistory extends PasswordConstraintBase implements ContainerFactory
     if ($repeats > intval($configuration['history_repeats'])) {
       $validation->setErrorMessage($this->t('Password has been reused too many times.  Choose a different password.'));
     }
+    else{
+      $database = \Drupal::database();
+      $query = $database->query("SELECT * FROM password_policy_history where uid=".$user->id()." order by id desc limit 5");
+      $hashes= $query->fetchAll();
+        $repeats_prev = 0;
+          foreach ($hashes as $hash) {
+            if ($this->passwordService->check($password, $hash->pass_hash)) {
+              $repeats_prev++;
+            }
+          }
+          if ($repeats_prev >= 1) {
+            $validation->setErrorMessage($this->t('Password must not be the same as one of the previous 5 passwords.'));
+          }
+    }
 
     return $validation;
   }
